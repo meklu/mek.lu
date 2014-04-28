@@ -13,9 +13,9 @@ Features
     * URLs are stored in a filesystem tree in the configured path
     * `/e/` contains external tree, `/i/` contains internal tree
     * Examples:
-        * http://mek.lu/e/aeiou -> `/e/ae/iou`
+        * http://mek.lu/e/aeiou -> `/e/aei/aeiou`
             * `http://www.nasa.gov/moonbasealpha/`
-        * http://mek.lu/marvelous -> `/i/ma/rvelous`
+        * http://mek.lu/marvelous -> `/i/mar/marvelous`
             * `http://meklu.org/imgs/gib.svg`
 
 Request Flow
