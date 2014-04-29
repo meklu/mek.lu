@@ -1,6 +1,18 @@
+DEBUG := 0
+DEBUG_UTF8 := 0
+
 CC := gcc
-CFLAGS := -Wall -Wextra -Wshadow -Wstrict-prototypes -pedantic -Os -g
+CFLAGS := -Wall -Wextra -Wshadow -Wstrict-prototypes -pedantic -Os
 LDFLAGS := -pthread
+
+ifeq ($(DEBUG_UTF8), 1)
+	DEBUG := 1
+	CFLAGS := $(CFLAGS) -DDEBUG_UTF8
+endif
+
+ifeq ($(DEBUG), 1)
+	CFLAGS := $(CFLAGS) -g
+endif
 
 ifeq ($(shell uname -s), Linux)
 	LDFLAGS := $(LDFLAGS) -lcap

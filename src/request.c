@@ -2,6 +2,7 @@
 #include "request.h"
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -272,7 +273,11 @@ int request_rewrite(struct request_ent *rent) {
 		return 2;
 	}
 	readsize = strlen(rent->path);
-	if (readsize < 2) {
+	/* validate size and encoding */
+	if (
+		readsize < 2 ||
+		request_utf8validate(rent->path) == 0
+	) {
 		rent->code = 400;
 		rent->path[0] = '\0';
 		return -1;
@@ -686,7 +691,6 @@ int request_populate(struct request_ent *rent) {
 						rent->code = 400;
 						return 0;
 					}
-					/* get rid of control characters */
 				} else if (spaces == 2) {
 					/* HTTP version */
 					int maj, min;
