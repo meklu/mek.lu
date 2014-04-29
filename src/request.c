@@ -123,14 +123,143 @@ int request_decodeuri(char *buf, int len) {
 	return wi;
 }
 
+/* Returns 1 if the string is valid UTF-8, 0 otherwise */
+int request_utf8validate(const char *buf) {
+	uint32_t dec = 0x0;
+	char di = 0, dc = 0;
+	size_t i, slen = strlen(buf);
+	for (i = 0; i < slen; i += 1) {
+		if (di == 0) {
+			if ((buf[i] & 0x80) == 0) {
+#ifdef DEBUG_UTF8
+				fprintf(stderr, "u8v: reg (%c)\n", buf[i]);
+#endif
+				continue;
+			} else if ((buf[i] & 0xF8) == 0xF8) {
+				/* disallow 11111xxx lead bytes */
+#ifdef DEBUG_UTF8
+				fprintf(
+					stderr,
+					"u8v: %#.2X: bad lead byte\n",
+					(int) buf[i]
+				);
+#endif
+				return 0;
+			} else if ((buf[i] & 0xC0) == 0xC0) {
+				/* good lead byte: count leading bits;
+				 * this is the codepoint byte count */
+				union {
+					char buf;
+					char i;
+				} b;
+				b.buf = buf[i] & 0xF0;
+				dc = 0;
+				while (b.buf & 0x80) {
+					dc += 1;
+					b.buf <<= 1;
+				}
+				dec = 0;
+				for (b.i = 0; b.i < 8 - dc; b.i += 1) {
+					dec |= (buf[i] & (1 << b.i)) <<
+						((dc - 1) * 6);
+				}
+				di = 1;
+			} else if ((buf[i] & 0xC0) == 0x80) {
+#ifdef DEBUG_UTF8
+				fprintf(stderr,
+					"u8v: %#.2X: not a lead byte\n",
+					(int) buf[i]
+				);
+#endif
+				return 0;
+			} else {
+#ifdef DEBUG_UTF8
+				/* ??? */
+				fprintf(stderr,
+					"u8v: %#.2X: ???\n",
+					(int) buf[i]
+				);
+#endif
+				return 0;
+			}
+		} else {
+			if (di < dc) {
+				char tmp;
+				if ((buf[i] & 0xC0) != 0x80) {
+					/* if there are still decodable bytes
+					 * left, they must be 10xxxxxx
+					 */
+#ifdef DEBUG_UTF8
+					fprintf(
+						stderr,
+						"u8v: missing %d bytes\n",
+						dc - di
+					);
+#endif
+					return 0;
+				}
+				tmp = buf[i] & ~0xC0;
+				dec |= tmp << (6 * (dc - di));
+				di += 1;
+			}
+			if (di == dc) {
+				/* codepoints above 0x10FFFF are illegal
+				 * (RFC 3629)
+				 */
+				if (dec > 0x10FFFF) {
+					return 0;
+				}
+				/* so are the following: [0xD800, 0xDFFF] */
+				if (dec >= 0xD800 && dec <= 0xDFFF) {
+					return 0;
+				}
+				di = 0;
+			}
+		}
+	}
+	return 1;
+}
+
+/* Returns the byte length of len UTF-8 codepoints. If there
+ * aren't enough bytes, returns len.
+ */
+size_t request_utf8cplen(const char *buf, size_t len) {
+	size_t i, slen = strlen(buf), c;
+#ifdef DEBUG_UTF8
+	fprintf(stderr, "u8c: b %8p\n", buf);
+	fprintf(stderr, "u8c: b %s\n", buf);
+	fprintf(stderr, "u8c: l %zu\n", len);
+#endif
+	i = c = 0;
+	while (i < slen && c < len) {
+		c += 1;
+		i += 1;
+		while ((buf[i] & 0xC0) == 0x80 && i < slen) {
+			i += 1;
+		}
+	}
+#ifdef DEBUG_UTF8
+	fprintf(stderr, "u8c: c %zu, i %zu\n", c, i);
+	fputs("u8c: r ", stderr);
+	fwrite(buf, 1, i, stderr);
+	fputs("\n", stderr);
+#endif
+	if (len > i) {
+		return len;
+	}
+	return i;
+}
+
 /* Rewrites the requested path and sets the response code to 400
  * and returns -1 if the path looks dreadful. Returns 0 on redirect,
  * 1 on HTML, 2 on text.
  */
 int request_rewrite(struct request_ent *rent) {
-	size_t readsize = strlen(rent->path);
+	size_t readsize;
+	/* get the base directory (/[ei]/%s) byte length */
+	size_t u8prefix;
 	/* <path> + i/ + fff/ + '\0' - initial '/' */
-	size_t bufsize = readsize + 2 + 4;
+	size_t bufsize;
 	char *buf;
 	unsigned int ri, wi, di, fail = 0;
 	if (strncmp(rent->path, "/", 2) == 0) {
@@ -142,14 +271,30 @@ int request_rewrite(struct request_ent *rent) {
 		rent->path = strdup("robots.txt");
 		return 2;
 	}
-	/* minimum tiny length is '/' + 4 chars (base dir: 3; url: 1)
+	readsize = strlen(rent->path);
+	if (readsize < 2) {
+		rent->code = 400;
+		rent->path[0] = '\0';
+		return -1;
+	}
+	/* get the base directory (/[ei]/%s) byte length */
+	u8prefix = request_utf8cplen(
+		&(rent->path[1 + ((
+			rent->path[1] == 'e' &&
+			rent->path[2] == '/'
+		) ? 2 : 0)]),
+		3
+	);
+	/* <path> + i/ + fff/ + '\0' - initial '/' */
+	bufsize = readsize + 2 + u8prefix + 1;
+	/* minimum tiny length is '/' + 3 bytes (base dir)
 	 * this is two characters longer with e/ urls
 	 */
 	if (
-		readsize < 5 ||
+		readsize < 1 + u8prefix ||
 		(
 			(rent->path[1] == 'e' && rent->path[2] == '/') &&
-			readsize < 7
+			readsize < 1 + u8prefix + 2
 		)
 	) {
 		rent->code = 400;
@@ -184,12 +329,12 @@ int request_rewrite(struct request_ent *rent) {
 		}
 		buf[wi] = rent->path[ri];
 		/* base directory, fff/ */
-		if (di < 4) {
+		if (di < u8prefix + 1) {
 			di += 1;
-			if (di == 3) {
+			if (di == u8prefix) {
 				wi += 1;
 				buf[wi] = '/';
-				ri -= 3;
+				ri -= di;
 			}
 		}
 		wi += 1;
