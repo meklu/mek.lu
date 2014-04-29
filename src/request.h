@@ -7,7 +7,7 @@
 
 struct request_ent {
 	/* the socket's associated stream */
-	FILE *sock;
+	int sock;
 	/* response code */
 	int code;
 	/* HTTP version to respond with */
@@ -31,7 +31,7 @@ struct request_ent {
 	char *raw_request;
 };
 
-int request_getline(char *buf, int len, FILE *f);
+int request_getline(char *buf, int len, int fd);
 int request_decodeuri(char *buf, int len);
 int request_rewrite(struct request_ent *rent);
 

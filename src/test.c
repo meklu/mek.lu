@@ -8,7 +8,7 @@ int main(void) {
 	char buf[64];
 	int r;
 	errno = 0;
-	while ((r = request_getline(buf, sizeof(buf), stdin)) > 0) {
+	while ((r = request_getline(buf, sizeof(buf), STDIN_FILENO)) > 0) {
 		struct request_ent rent;
 		printf(
 			"\033[36mresp(%d|%u):\033[0m %s",

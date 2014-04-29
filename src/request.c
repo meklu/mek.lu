@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
-/* Reads a line from stream f, and stores it in buf.
+/* Reads a line from descriptor f, and stores it in buf.
  * In case it is longer than len, it is truncated to
  * len - 1 bytes, and the number of bytes (excluding
  * the terminating NULL byte) is returned. In case of
@@ -26,33 +26,30 @@
  *
  * On error, -1 is returned.
  */
-int request_getline(char *buf, int len, FILE *f) {
-	int ret = 0, storerr = errno, b = 0;
+int request_getline(char *buf, int len, int fd) {
+	int ret = 0, storerr = errno, r = -1;
+	char b = 0;
 
-	if (buf == NULL || len <= 0 || f == NULL) {
+	if (buf == NULL || len <= 0 || fd < 0) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	flockfile(f);
-
 	errno = 0;
-	while (ret < len - 1 && (b = getc_unlocked(f)) != EOF) {
-		buf[ret] = (char) b;
+	while (ret < len - 1 && (r = read(fd, &b, 1)) > 0) {
+		buf[ret] = b;
 		ret += 1;
-		if (b == (int) '\n') {
+		if (b == '\n') {
 			break;
 		}
 		errno = 0;
 	}
-	if (b == EOF && ret == 0 && ferror(f)) {
-		storerr = EIO;
+	if (r == -1 && ret == 0) {
+		storerr = errno;
 		ret = -1;
 	} else {
 		buf[ret] = '\0';
 	}
-
-	funlockfile(f);
 
 	errno = storerr;
 	return ret;
@@ -491,7 +488,7 @@ void request_put_common(
 	int ret;
 	/* HTTP protocol line */
 	errno = 0;
-	ret = fprintf(
+	ret = dprintf(
 		rent->sock,
 		"HTTP/%d.%d %d %s\r\n",
 		rent->v_major,
@@ -503,12 +500,12 @@ void request_put_common(
 		log_perror(
 			lcfg,
 			errno,
-			"request: fprintf"
+			"request: dprintf"
 		);
 		return;
 	}
 	/* Server header */
-	fputs("Server: mek.lu\r\n", rent->sock);
+	dprintf(rent->sock, "Server: mek.lu\r\n");
 	/* Date header */
 	{
 		const char *dformat = "%a, %d %b %Y %H:%M:%S GMT";
@@ -520,7 +517,7 @@ void request_put_common(
 		gmtime_r(&(tp.tv_sec), &t);
 		strftime(datebuf, sizeof(datebuf), dformat, &t);
 		if (datebuf[0] != '\0') {
-			fprintf(
+			dprintf(
 				rent->sock,
 				"%s: %s\r\n",
 				"Date",
@@ -575,7 +572,7 @@ void request_put_error_body(
 	const char *respstr = request_get_respstr(rent->code);
 	int ret;
 	errno = 0;
-	ret = fprintf(
+	ret = dprintf(
 		rent->sock,
 		request_error_fmt,
 		rent->code, respstr,
@@ -585,7 +582,7 @@ void request_put_error_body(
 		log_perror(
 			lcfg,
 			errno,
-			"request: errorbody: fprintf"
+			"request: errorbody: dprintf"
 		);
 	}
 }
@@ -768,7 +765,7 @@ int request_process(
 		int rr = -1, fsize = 0;
 		time_t fmodified = 0;
 		/* a file to be read */
-		FILE *f = NULL;
+		int f = -1;
 		clock_gettime(CLOCK_MONOTONIC, &tp_b);
 		/* initialise the request */
 		memset(&rent, 0, sizeof(rent));
@@ -779,15 +776,6 @@ int request_process(
 		rent.v_major = 1;
 		rent.v_minor = 0;
 		errno = 0;
-		rent.sock = fdopen(dup(sockfd), "rb+");
-		if (rent.sock == NULL) {
-			log_perror(
-				lcfg,
-				errno,
-				"request: fdopen"
-			);
-			goto quit;
-		}
 		/* populate the request entity */
 		if (request_populate(&rent) == -1) {
 			/* quit on read error */
@@ -797,8 +785,8 @@ int request_process(
 		rr = request_rewrite(&rent);
 		if (rr >= 0) {
 			errno = 0;
-			f = fopen(rent.path, "rb");
-			if (f == NULL) {
+			f = open(rent.path, O_RDONLY);
+			if (f == -1) {
 				if (errno == EACCES) {
 					rent.code = 403;
 				} else {
@@ -807,7 +795,7 @@ int request_process(
 				rr = -1;
 			} else {
 				struct stat s;
-				if (fstat(fileno(f), &s) == 0) {
+				if (fstat(f, &s) == 0) {
 					fsize = s.st_size;
 					fmodified = s.st_mtime;
 				}
@@ -832,7 +820,7 @@ int request_process(
 			/* redirection */
 			char buf[64];
 			int ws = 0;
-			fputs("Location: ", rent.sock);
+			dprintf(sockfd, "Location: ");
 			while (
 				(ws = request_getline(
 					buf, sizeof(buf), f
@@ -847,13 +835,20 @@ int request_process(
 					ws -= 1;
 				}
 				if (ws > 0) {
-					fwrite(buf, ws, 1, rent.sock);
+					errno = 0;
+					if (write(sockfd, buf, ws) == -1) {
+						log_perror(
+							lcfg,
+							errno,
+							"request: write"
+						);
+					}
 				}
 				if (die == 1) {
 					break;
 				}
 			}
-			fputs("\r\n", rent.sock);
+			dprintf(sockfd, "\r\n");
 		}
 		if (rr >= 0 && rr <= 2) {
 			/* modification date */
@@ -864,7 +859,7 @@ int request_process(
 			gmtime_r(&(fmodified), &t);
 			strftime(datebuf, sizeof(datebuf), dformat, &t);
 			if (datebuf[0] != '\0') {
-				fprintf(
+				dprintf(
 					rent.sock,
 					"%s: %s\r\n",
 					"Last-Modified",
@@ -872,8 +867,8 @@ int request_process(
 				);
 			}
 			/* content type and length */
-			fprintf(
-				rent.sock,
+			dprintf(
+				sockfd,
 				"Content-Type: %s; charset=utf-8\r\n"
 				"Content-Length: %d\r\n",
 				(rr == 1) ?
@@ -884,16 +879,16 @@ int request_process(
 		}
 		/* error :( */
 		if (rent.code >= 500) {
-			fputs("Connection: close\r\n", rent.sock);
+			dprintf(sockfd, "Connection: close\r\n");
 		} else if (rent.v_major == 1 && rent.v_minor == 0) {
 			/* do explicit keepalives for HTTP/1.0 when no
 			 * error has been encountered; implicit with HTTP/1.1
 			 */
-			fputs("Connection: keep-alive\r\n", rent.sock);
+			dprintf(sockfd, "Connection: keep-alive\r\n");
 		}
 		if (rent.code >= 400) {
-			fprintf(
-				rent.sock,
+			dprintf(
+				sockfd,
 				"Content-Type: %s\r\n"
 				"Content-Length: %d\r\n",
 				"application/xhtml+xml; charset=utf-8",
@@ -901,7 +896,7 @@ int request_process(
 			);
 		}
 		/* close headers */
-		fprintf(rent.sock, "\r\n");
+		dprintf(rent.sock, "\r\n");
 		/* put body, if any
 		 * e.g. /robots.txt, /, error pages
 		 */
@@ -910,14 +905,20 @@ int request_process(
 				char fbuf[64];
 				size_t fret = 0;
 				while (
-					(fret = fread(
+					(fret = read(
+						f,
 						fbuf,
-						1,
-						sizeof(fbuf),
-						f
+						sizeof(fbuf)
 					)) > 0
 				) {
-					fwrite(fbuf, fret, 1, rent.sock);
+					errno = 0;
+					if (write(sockfd, fbuf, fret) == -1) {
+						log_perror(
+							lcfg,
+							errno,
+							"request: write"
+						);
+					}
 				}
 			}
 			/* error :( */
@@ -925,8 +926,6 @@ int request_process(
 				request_put_error_body(lcfg, &rent);
 			}
 		}
-		/* flush sent data */
-		fflush(rent.sock);
 		/* calculate delta time */
 		clock_gettime(CLOCK_MONOTONIC, &tp_e);
 		rent.dt = (double) (
@@ -945,9 +944,9 @@ int request_process(
 		FREEANDNULL(rent.ua);
 		FREEANDNULL(rent.raw_request);
 		/* close the file we opened */
-		if (f != NULL) {
-			fclose(f);
-			f = NULL;
+		if (f != -1) {
+			close(f);
+			f = -1;
 		}
 		/* process next client request, or die */
 		if (rent.code >= 500) {
@@ -971,9 +970,6 @@ int request_process(
 	ret = EXIT_SUCCESS;
 quit:
 	/* close the connection */
-	if (rent.sock != NULL) {
-		fclose(rent.sock);
-	}
 	errno = 0;
 	shutdown(sockfd, SHUT_RDWR);
 	log_perror(
