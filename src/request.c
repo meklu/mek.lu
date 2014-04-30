@@ -760,6 +760,21 @@ int request_process(
 ) {
 	int ret = EXIT_FAILURE;
 	struct request_ent rent;
+	struct pollfd pfd;
+	pfd.fd = sockfd;
+	pfd.events = POLLIN | POLLHUP;
+	pfd.revents = 0;
+	/* initial one-second timeout */
+	if (poll(&pfd, 1, 1000) > 0) {
+		/* quit on hangup */
+		if ((pfd.revents & POLLHUP) == POLLHUP) {
+			goto quit;
+		}
+	} else {
+		/* poll timeout */
+		goto quit;
+	}
+	/* all is okay */
 	for (;;) {
 		struct timespec tp_b, tp_e;
 		int rr = -1, fsize = 0;
@@ -952,10 +967,6 @@ int request_process(
 		if (rent.code >= 500) {
 			goto quit;
 		} else {
-			struct pollfd pfd;
-			pfd.fd = sockfd;
-			pfd.events = POLLIN | POLLHUP;
-			pfd.revents = 0;
 			/* 5 second keepalive timeout */
 			if (
 				poll(&pfd, 1, 5000) > 0 &&
