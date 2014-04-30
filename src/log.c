@@ -235,3 +235,5 @@ int log_perror(const struct log_cfg *cfg, int err, const char *prefix, ...) {
 	va_end(vl);
 	return ret;
 }
+
+/* vi: set sts=8 ts=8 sw=8 noexpandtab: */

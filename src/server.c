@@ -392,3 +392,5 @@ void server_loop(const struct server_cfg *cfg) {
 		}
 	}
 }
+
+/* vi: set sts=8 ts=8 sw=8 noexpandtab: */

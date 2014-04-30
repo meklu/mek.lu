@@ -246,3 +246,5 @@ void worker_loop(const struct log_cfg *lcfg, int ipcsock, int af, int sockfd) {
 	);
 	exit(ret);
 }
+
+/* vi: set sts=8 ts=8 sw=8 noexpandtab: */
