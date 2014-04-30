@@ -175,7 +175,9 @@ void worker_loop(const struct log_cfg *lcfg, int ipcsock, int af, int sockfd) {
 			case EPROTO:
 			case ENOPROTOOPT:
 			case EHOSTDOWN:
+#ifdef ENONET
 			case ENONET:
+#endif
 			case EHOSTUNREACH:
 			case EOPNOTSUPP:
 			case ENETUNREACH:
