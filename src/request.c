@@ -260,6 +260,9 @@ int request_rewrite(struct request_ent *rent) {
 	size_t bufsize;
 	char *buf;
 	unsigned int ri, wi, di, fail = 0;
+	if (rent->path == NULL) {
+		return -1;
+	}
 	if (strncmp(rent->path, "/", 2) == 0) {
 		free(rent->path);
 		rent->path = strdup("index.html");
@@ -269,7 +272,9 @@ int request_rewrite(struct request_ent *rent) {
 		rent->path = strdup("robots.txt");
 		return 2;
 	}
-	readsize = strlen(rent->path);
+	if ((readsize = strlen(rent->path)) == 0) {
+		return -1;
+	}
 	/* validate size and encoding */
 	if (
 		readsize < 2 ||
@@ -792,12 +797,20 @@ int request_process(
 		rent.v_minor = 0;
 		errno = 0;
 		/* populate the request entity */
-		if (request_populate(&rent) == -1) {
+		rr = request_populate(&rent);
+		if (rr == -1) {
 			/* quit on read error */
 			goto quit;
+		} else if (rr > 0) {
+			/* rewrite the path if the request was well-formed */
+			rr = request_rewrite(&rent);
+		} else {
+			/* reset rr to -1: this signifies that an error
+			 * page will be emitted further down the line,
+			 * rather than a document or redirection
+			 */
+			rr = -1;
 		}
-		/* rewrite the path */
-		rr = request_rewrite(&rent);
 		if (rr >= 0) {
 			errno = 0;
 			f = open(rent.path, O_RDONLY);
