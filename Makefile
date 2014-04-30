@@ -20,6 +20,7 @@ endif
 
 SRC := \
 	main.c \
+        clock.c \
 	server.c \
 	worker.c \
 	log.c \
@@ -31,12 +32,14 @@ TARGETS := mekdotlu
 SRC := $(addprefix src/, $(SRC))
 OBJ := $(SRC:%.c=%.o)
 
+CLKHDEP := log request worker
 LOGHDEP := main server worker log net request
 SRVHDEP := main server
 WRKHDEP := server
 NETHDEP := main server worker net
 REQHDEP := worker request
 
+CLKHDEP := $(addprefix src/, $(addsuffix .o, $(LOGHDEP)))
 LOGHDEP := $(addprefix src/, $(addsuffix .o, $(LOGHDEP)))
 SRVHDEP := $(addprefix src/, $(addsuffix .o, $(SRVHDEP)))
 WRKHDEP := $(addprefix src/, $(addsuffix .o, $(WRKHDEP)))
@@ -53,6 +56,7 @@ clean :
 	$(RM) $(OBJ)
 	$(RM) $(TARGETS)
 
+$(CLKHDEP) : src/clock.h
 $(LOGHDEP) : src/log.h
 $(SRVHDEP) : src/server.h
 $(WRKHDEP) : src/worker.h
