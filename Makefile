@@ -3,8 +3,10 @@ DEBUG_UTF8 := 0
 
 CFLAGS := $(CFLAGS) -Wall -Wextra -Wshadow -Wstrict-prototypes -pedantic -Os
 
+KERNEL := $(shell uname -s)
+
 ifeq ($(origin CC), default)
-	ifeq ($(shell uname -s), Darwin)
+	ifeq ($(KERNEL), Darwin)
 		CC := clang
 	else
 		CC := gcc
@@ -20,18 +22,21 @@ ifeq ($(DEBUG), 1)
 	CFLAGS := $(CFLAGS) -g
 endif
 
-ifeq ($(shell uname -s), Linux)
+ifeq ($(KERNEL), Linux)
 	LDFLAGS := $(LDFLAGS) -lcap
 endif
 
 SRC := \
 	main.c \
-	clock.c \
 	server.c \
 	worker.c \
 	log.c \
 	net.c \
 	request.c
+
+ifeq ($(KERNEL), Darwin)
+	SRC := $(SRC) clock.c
+endif
 
 TARGETS := mekdotlu
 
