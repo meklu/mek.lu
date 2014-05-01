@@ -205,8 +205,9 @@ int log_kill(struct log_cfg *cfg) {
 		fsync(cfg->_fd);
 		if (close(cfg->_fd) == 0) {
 			ret = 1;
+		} else {
+			ret = 0;
 		}
-		ret = 0;
 		cfg->_fd = -1;
 	} else {
 		ret = 1;

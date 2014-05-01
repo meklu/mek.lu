@@ -869,7 +869,7 @@ int request_process(
 				char die = 0;
 				if (buf[ws - 1] == '\n') {
 					die = 1;
-					if (buf[ws - 2] == '\r') {
+					if (ws > 1 && buf[ws - 2] == '\r') {
 						ws -= 1;
 					}
 					ws -= 1;
