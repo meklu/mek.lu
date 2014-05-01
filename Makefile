@@ -1,8 +1,15 @@
 DEBUG := 0
 DEBUG_UTF8 := 0
 
-CC := gcc
 CFLAGS := $(CFLAGS) -Wall -Wextra -Wshadow -Wstrict-prototypes -pedantic -Os
+
+ifeq ($(origin CC), default)
+	ifeq ($(shell uname -s), Darwin)
+		CC := clang
+	else
+		CC := gcc
+	endif
+endif
 
 ifeq ($(DEBUG_UTF8), 1)
 	DEBUG := 1
