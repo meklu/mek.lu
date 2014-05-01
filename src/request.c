@@ -219,7 +219,10 @@ int request_utf8validate(const char *buf) {
 }
 
 /* Returns the byte length of len UTF-8 codepoints. If there
- * aren't enough bytes, returns len.
+ * aren't enough bytes in the string, returns len. If there
+ * aren't enough codepoints in the string, returns the minimum
+ * safe number to advance the string by that is also larger than
+ * or equal to len.
  */
 size_t request_utf8cplen(const char *buf, size_t len) {
 	size_t i, slen = strlen(buf), c;

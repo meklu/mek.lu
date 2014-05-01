@@ -18,12 +18,27 @@ Features
         * http://mek.lu/marvelous -> `/i/mar/marvelous`
             * `http://meklu.org/imgs/gib.svg`
 
+Distinction between URL types
+====
+
+The difference between external URLs and base service URLs is mostly
+semantic. An upcoming URL insertion utility, however, could be configured
+to automatically insert URLs with certain host parts into the internal
+tree.
+
 Request Flow
 ====
 
 1. Client sends a request
 2. Server receives the request
 3. Simple processing on the GET
+    * Index exception: `/` -> `/index.html`
+        * Notable feature: a GET request for `/index.html` will still be
+          interpreted as a regular request, and will hence be read from
+          `/i/ind/index.html`. Putting an actual HTML file in this path
+          will merely output the first line in the file - usually the
+          DOCTYPE declaration - as the Location header, and you probably
+          wouldn't want that to happen.
     * robots.txt exception: `/robots.txt`
     * Pick filesystem tree: `/e/` for external URLs, `/i/` for base
       service URLs
