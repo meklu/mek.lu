@@ -4,6 +4,7 @@
 #include <mach/mach_time.h>
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include <errno.h>
 
 static uint64_t timebase_factor = 0;
 int clock_gettime(int clock_id, struct timespec *ts) {
@@ -36,6 +37,7 @@ int clock_gettime(int clock_id, struct timespec *ts) {
 			return 0;
 		}
 		default:
+			errno = EINVAL;
 			return -1;
 	}
 }
