@@ -3,7 +3,7 @@ DEBUG_UTF8 := 0
 
 CC := gcc
 CFLAGS := -Wall -Wextra -Wshadow -Wstrict-prototypes -pedantic -Os
-LDFLAGS := -pthread
+LDFLAGS :=
 
 ifeq ($(DEBUG_UTF8), 1)
 	DEBUG := 1
