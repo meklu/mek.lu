@@ -13,3 +13,5 @@ int net_accept(
 );
 
 #endif /* __mekdotlu_net_h */
+
+/* vi: set sts=8 ts=8 sw=8 noexpandtab: */

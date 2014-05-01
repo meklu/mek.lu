@@ -30,3 +30,5 @@ int log_reg(const struct log_cfg *cfg, const char *format, ...);
 int log_perror(const struct log_cfg *cfg, int err, const char *prefix, ...);
 
 #endif /* __mekdotlu_log_h */
+
+/* vi: set sts=8 ts=8 sw=8 noexpandtab: */

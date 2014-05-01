@@ -43,3 +43,5 @@ int main(void) {
 	}
 	return 0;
 }
+
+/* vi: set sts=8 ts=8 sw=8 noexpandtab: */
