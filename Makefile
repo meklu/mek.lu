@@ -42,8 +42,7 @@ clean :
 	$(RM) $(TARGETS)
 
 %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-	@$(CC) -MM $(CFLAGS) $*.c > $*.d
+	$(CC) $(CFLAGS) -MD -c $< -o $@
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
