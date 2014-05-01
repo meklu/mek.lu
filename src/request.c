@@ -7,6 +7,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -789,6 +790,8 @@ int request_process(
 		time_t fmodified = 0;
 		/* a file to be read */
 		int f = -1;
+		/* a lock for the file */
+		struct flock fl;
 		clock_gettime(CLOCK_MONOTONIC, &tp_b);
 		/* initialise the request */
 		memset(&rent, 0, sizeof(rent));
@@ -830,6 +833,12 @@ int request_process(
 					fsize = s.st_size;
 					fmodified = s.st_mtime;
 				}
+				/* initialize the lock */
+				fl.l_type = F_RDLCK;
+				fl.l_whence = SEEK_END;
+				fl.l_start = 0;
+				fl.l_len = 0;
+				fcntl(f, F_SETLKW, &fl);
 			}
 		}
 		if (rr == 0) {
