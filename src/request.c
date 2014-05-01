@@ -1,6 +1,6 @@
 #include "log.h"
 #include "request.h"
-#include <time.h>
+#include "clock.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>

@@ -13,6 +13,11 @@
 #include <unistd.h>
 #include <errno.h>
 
+/* Required for OSX. */
+#ifndef MAP_ANONYMOUS
+# define MAP_ANONYMOUS MAP_ANON
+#endif
+
 #define p(x) fputs(x "\n", f)
 void print_usage(FILE *f) {
 	p("USAGE:  mekdotlu <args>");

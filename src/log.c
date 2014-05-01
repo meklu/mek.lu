@@ -1,8 +1,8 @@
 #include "log.h"
+#include "clock.h"
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <time.h>
 #include <string.h>
 
 int vlog_raw(
