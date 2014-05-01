@@ -6,6 +6,9 @@
 
 struct server_cfg {
 	char *root;
+	char should_setuid;
+	uid_t uid;
+	gid_t gid;
 	unsigned short port;
 	/* we'll try to bind to both AF's on INADDR_ANY */
 	int _sock;

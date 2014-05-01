@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
 
 #ifdef __linux
@@ -25,21 +26,22 @@
 int server_constrain(const struct server_cfg *cfg) {
 	const char *path = cfg->root;
 #ifdef __linux
-	/* get the process capabilities
-	 *
-	 * we are especially interested in CAP_SYS_CHROOT but
-	 * we want to drop them all anyway, hence the cap_clear()
-	 */
-	cap_t caps = cap_get_proc();
+	/* get the process capability flag for CAP_SYS_CHROOT */
 	cap_flag_value_t cap_chroot = 0;
 
-	cap_get_flag(
-		caps,
-		CAP_SYS_CHROOT,
-		CAP_EFFECTIVE,
-		&cap_chroot
-	);
-	cap_clear(caps);
+	/* do this in a new scope so we don't accidentally use the cap object
+	 * after freeing it.
+	 */
+	{
+		cap_t caps = cap_get_proc();
+		cap_get_flag(
+			caps,
+			CAP_SYS_CHROOT,
+			CAP_EFFECTIVE,
+			&cap_chroot
+		);
+		cap_free(caps);
+	}
 #endif
 	/* chroot needs an absolute pathname */
 	if (path == NULL || path[0] != '/') {
@@ -98,24 +100,67 @@ int server_constrain(const struct server_cfg *cfg) {
 		"server: Document root set to %s",
 		path
 	);
-#ifdef __linux
-	/* drop the capabilities */
+
 	errno = 0;
-	if (cap_set_proc(caps) == -1) {
-		log_perror(
-			&(cfg->_lcfg),
-			errno,
-			"server: Error dropping capabilities"
-		);
-	} else {
+	if (cfg->should_setuid) {
+		/* Setting user id implicitly drops all capabilities. */
+		if (setgid(cfg->gid) == -1) {
+			log_perror(
+				&(cfg->_lcfg),
+				errno,
+				"server: Error setting group id %i",
+				cfg->gid
+			);
+			return 0;
+		}
+		if (setuid(cfg->uid) == -1) {
+			log_perror(
+				&(cfg->_lcfg),
+				errno,
+				"server: Error setting user id %i",
+				cfg->uid
+			);
+			return 0;
+		}
 		log_ok(
 			&(cfg->_lcfg),
-			"server: Dropped all capabilities"
+			"server: Set uid to %i, gid to %i",
+			cfg->uid, cfg->gid
 		);
-	}
-	/* don't take a leak */
-	cap_free(caps);
+	} else {
+#ifdef __linux
+		cap_t empty_caps = cap_get_proc();
+		cap_clear(empty_caps);
+
+		/* drop the capabilities */
+		if (cap_set_proc(empty_caps) == -1) {
+			log_perror(
+				&(cfg->_lcfg),
+				errno,
+				"server: Error dropping capabilities"
+			);
+		} else {
+			log_ok(
+				&(cfg->_lcfg),
+				"server: Dropped all capabilities"
+			);
+		}
+		/* don't take a leak */
+		cap_free(empty_caps);
+#else
+		/* Don't let someone run this as root without Linux capabilities
+		 * support (since in that case we can at least drop all of our
+		 * capabilities.)
+		 */
+		if (geteuid() == 0) {
+			log_err(
+				&(cfg->_lcfg),
+				"server: Attempting to run as root, use -u to choose a user to drop privileges to"
+			);
+			return 0;
+		}
 #endif
+	}
 	return 1;
 }
 
@@ -148,7 +193,7 @@ int server_init(struct server_cfg *cfg) {
 	if (cfg->_sock == -1 && cfg->_sock6 == -1) {
 		return 0;
 	}
-	/* try to chroot */
+	/* try to chroot & drop capabilities */
 	return server_constrain(cfg);
 }
 
