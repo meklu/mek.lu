@@ -37,7 +37,7 @@ void print_usage(FILE *f) {
 	p("EXAMPLE:");
 	p("        Run the service on port 80, follow path symlinks and");
 	p("        set the document root to `./urls'.");
-	p("        $ mekdotly -p80 -f -r./urls");
+	p("        $ mekdotlu -p80 -f -r./urls");
 }
 #undef p
 
