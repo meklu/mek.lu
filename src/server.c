@@ -147,6 +147,18 @@ int server_constrain(const struct server_cfg *cfg) {
 		}
 		/* don't take a leak */
 		cap_free(empty_caps);
+#else
+		/* Don't let someone run this as root without Linux capabilities
+		 * support (since in that case we can at least drop all of our
+		 * capabilities.)
+		 */
+		if (geteuid() == 0) {
+			log_err(
+				&(cfg->_lcfg),
+				"server: Attempting to run as root, use -u to choose a user to drop privileges to"
+			);
+			return 0;
+		}
 #endif
 	}
 	return 1;
