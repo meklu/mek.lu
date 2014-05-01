@@ -31,18 +31,6 @@ TARGETS := mekdotlu
 SRC := $(addprefix src/, $(SRC))
 OBJ := $(SRC:%.c=%.o)
 
-LOGHDEP := main server worker log net request
-SRVHDEP := main server
-WRKHDEP := server
-NETHDEP := main server worker net
-REQHDEP := worker request
-
-LOGHDEP := $(addprefix src/, $(addsuffix .o, $(LOGHDEP)))
-SRVHDEP := $(addprefix src/, $(addsuffix .o, $(SRVHDEP)))
-WRKHDEP := $(addprefix src/, $(addsuffix .o, $(WRKHDEP)))
-NETHDEP := $(addprefix src/, $(addsuffix .o, $(NETHDEP)))
-REQHDEP := $(addprefix src/, $(addsuffix .o, $(REQHDEP)))
-
 .PHONY : all fall clean
 
 all : $(TARGETS)
@@ -53,17 +41,18 @@ clean :
 	$(RM) $(OBJ)
 	$(RM) $(TARGETS)
 
-$(LOGHDEP) : src/log.h
-$(SRVHDEP) : src/server.h
-$(WRKHDEP) : src/worker.h
-$(NETHDEP) : src/net.h
-$(REQHDEP) : src/request.h
-
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) -MM $(CFLAGS) $*.c > $*.d
+	@cp -f $*.d $*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
 
 mekdotlu : $(OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 test: src/test.c src/request.o src/log.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+-include $(OBJ:.o=.d)

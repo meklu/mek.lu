@@ -1,5 +1,6 @@
 mekdotlu
 test
 src/*.o
+src/*.d
 mekdotlu.log
 url/
