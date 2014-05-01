@@ -10,8 +10,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pwd.h>
 
 #define p(x) fputs(x "\n", f)
 void print_usage(FILE *f) {
@@ -24,6 +26,7 @@ void print_usage(FILE *f) {
 	p("OPTIONS:");
 	p("        -f      Follow symbolic links for paths specified");
 	p("                on the command line.");
+	p("        -u<str> Set user to switch to after listening on port.");
 	p("        -p<num> Set listen port. Defaults to 8081.");
 	p("        -r<str> Set document root. Default is current directory.");
 	p("        -o<str> Set log file. Can be left blank to not log to a");
@@ -69,6 +72,13 @@ void populate_cfg(
 		char *root;
 		char *log;
 	} f;
+
+	char should_setuid = 0;
+	struct {
+		uid_t uid;
+		gid_t gid;
+	} setuid_info;
+
 	memset(cfg, 0, sizeof(*cfg));
 	memset(&f, 0, sizeof(f));
 	symlinks = 0;
@@ -117,6 +127,36 @@ void populate_cfg(
 			f.root = &(argv[i][2]);
 		} else if (argv[i][1] == 'o') {
 			f.log = &(argv[i][2]);
+		} else if (argv[i][1] == 'u') {
+			char *buffer = NULL;
+			struct passwd pwd, *result = NULL;
+			int bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+			char *username = &(argv[i][2]);
+
+			if (bufsize == -1)
+			{
+				fprintf(stderr, "Unable to prepare for setuid().\n");
+				err = 1;
+				continue;
+			}
+
+			buffer = malloc(bufsize);
+			if (getpwnam_r(username, &pwd, buffer, bufsize, &result) != 0)
+			{
+				fprintf(stderr, "Unable to perform user lookup for -u switch!\n");
+				err = 1;
+				continue;
+			}
+			if (result == NULL)
+			{
+				fprintf(stderr, "The -u switch specified an invalid user '%s'.\n", username);
+				err = 1;
+				continue;
+			}
+
+			should_setuid = 1;
+			setuid_info.uid = pwd.pw_uid;
+			setuid_info.gid = pwd.pw_gid;
 		} else if (argv[i][1] == 'p') {
 			int scanret = sscanf(
 				&(argv[i][2]),
@@ -161,6 +201,11 @@ void populate_cfg(
 	}
 	if (port != 0) {
 		cfg->port = port;
+	}
+	if (should_setuid) {
+		cfg->should_setuid = 1;
+		cfg->uid = setuid_info.uid;
+		cfg->gid = setuid_info.gid;
 	}
 }
 
