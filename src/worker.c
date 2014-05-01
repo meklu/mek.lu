@@ -17,7 +17,7 @@
 
 void worker_loop(const struct log_cfg *lcfg, int ipcsock, int af, int sockfd) {
 	/* only touch forks_avail from this worker, not its child */
-	int pollret, forks_avail = MAX_REQ_CHILDREN, ret = EXIT_SUCCESS;
+	int pollret = -1, forks_avail = MAX_REQ_CHILDREN, ret = EXIT_SUCCESS;
 	const char *worker_name = (af == AF_INET) ? "ipv4" : "ipv6";
 	struct pollfd pfd[2];
 	/* how long the worker took to send the request down the chain */
@@ -51,7 +51,6 @@ void worker_loop(const struct log_cfg *lcfg, int ipcsock, int af, int sockfd) {
 	for (;;) {
 		int sockpass;
 		pid_t child = -1;
-		pollret = -1;
 		pfd[0].revents = 0;
 		pfd[1].revents = 0;
 		errno = 0;
