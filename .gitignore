@@ -1,6 +1,12 @@
+# Ignore build output
 mekdotlu
 test
 src/*.o
 src/*.d
+
+# Ignore runtime data
 mekdotlu.log
 url/
+
+# Ignore editor gunk
+.*.swp
