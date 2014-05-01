@@ -2,6 +2,7 @@
 #include "log.h"
 #include "net.h"
 #include "request.h"
+#include "clock.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <poll.h>
@@ -10,7 +11,6 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <time.h>
 
 /* maximum number of request forks per worker */
 #define MAX_REQ_CHILDREN 8
@@ -174,7 +174,9 @@ void worker_loop(const struct log_cfg *lcfg, int ipcsock, int af, int sockfd) {
 			case EPROTO:
 			case ENOPROTOOPT:
 			case EHOSTDOWN:
+#ifdef ENONET
 			case ENONET:
+#endif
 			case EHOSTUNREACH:
 			case EOPNOTSUPP:
 			case ENETUNREACH:

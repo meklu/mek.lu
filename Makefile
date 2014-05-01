@@ -26,6 +26,7 @@ endif
 
 SRC := \
 	main.c \
+	clock.c \
 	server.c \
 	worker.c \
 	log.c \
