@@ -1,4 +1,6 @@
-#if defined(__APPLE__)
+#if !defined(__APPLE__)
+# error clock.c is only needed on Mac OS X
+#endif /* defined(__APPLE__) */
 
 #include "clock.h"
 #include <mach/mach_time.h>
@@ -41,7 +43,5 @@ int clock_gettime(int clock_id, struct timespec *ts) {
 			return -1;
 	}
 }
-
-#endif /* defined(__APPLE__) */
 
 /* vi: set sts=8 ts=8 sw=8 noexpandtab: */
