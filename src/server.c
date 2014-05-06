@@ -155,7 +155,8 @@ int server_constrain(const struct server_cfg *cfg) {
 		if (geteuid() == 0) {
 			log_err(
 				&(cfg->_lcfg),
-				"server: Attempting to run as root, use -u to choose a user to drop privileges to"
+				"server: Attempting to run as root, use -u "
+				"to choose a user to drop privileges to"
 			);
 			return 0;
 		}
@@ -253,7 +254,7 @@ int server_kill(struct server_cfg *cfg) {
 			} \
 			/* close the parent's IPC socket */ \
 			close((_wrkstate).sock[0]); \
-			/* workers need not access to stdin */ \
+			/* workers need not access stdin */ \
 			fclose(stdin); \
 			worker_loop( \
 				&(cfg->_lcfg), \
@@ -348,8 +349,12 @@ void server_loop(const struct server_cfg *cfg) {
 		const char *worker = "UNK";
 		pid_t child;
 		if (server_run == 1) {
-			FORKWORKER("IPv4", cfg->_sock, cfg->_sock6, ipv4, AF_INET);
-			FORKWORKER("IPv6", cfg->_sock6, cfg->_sock, ipv6, AF_INET6);
+			FORKWORKER(
+				"IPv4", cfg->_sock, cfg->_sock6, ipv4, AF_INET
+			);
+			FORKWORKER(
+				"IPv6", cfg->_sock6, cfg->_sock, ipv6, AF_INET6
+			);
 		} else if (quitsent == 0) {
 			IPCSEND(ipv4, "quit");
 			IPCSEND(ipv6, "quit");

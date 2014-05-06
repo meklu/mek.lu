@@ -138,23 +138,40 @@ void populate_cfg(
 			int bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
 			char *username = &(argv[i][2]);
 
-			if (bufsize == -1)
-			{
-				fprintf(stderr, "Unable to prepare for setuid().\n");
+			if (bufsize == -1) {
+				fprintf(
+					stderr,
+					"Unable to prepare for setuid().\n"
+				);
 				err = 1;
 				continue;
 			}
 
 			buffer = malloc(bufsize);
-			if (getpwnam_r(username, &pwd, buffer, bufsize, &result) != 0)
-			{
-				fprintf(stderr, "Unable to perform user lookup for -u switch!\n");
+			if (
+				getpwnam_r(
+					username,
+					&pwd,
+					buffer,
+					bufsize,
+					&result
+				) != 0
+			) {
+				fprintf(
+					stderr,
+					"Unable to perform user lookup for "
+					"-u switch!\n"
+				);
 				err = 1;
 				continue;
 			}
-			if (result == NULL)
-			{
-				fprintf(stderr, "The -u switch specified an invalid user '%s'.\n", username);
+			if (result == NULL) {
+				fprintf(
+					stderr,
+					"The -u switch specified an invalid "
+					"user '%s'.\n",
+					username
+				);
 				err = 1;
 				continue;
 			}
@@ -188,7 +205,7 @@ void populate_cfg(
 	}
 	if (err == 1 || help == 1) {
 		if (err == 1) {
-			fprintf(stderr, "\n");
+			fputs("\n", stderr);
 			print_usage(stderr);
 			exit(EXIT_FAILURE);
 		} else {
