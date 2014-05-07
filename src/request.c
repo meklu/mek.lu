@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -89,7 +88,10 @@ int request_decodeuri(char *buf, int len) {
 			continue;
 		} else if (di == 1 || di == 2) {
 			char off = '\0';
-			if (isxdigit(buf[ri]) == 0) {
+			char isa = buf[ri] >= 'a' && buf[ri] <= 'f';
+			char isA = buf[ri] >= 'A' && buf[ri] <= 'F';
+			char isn = buf[ri] >= '0' && buf[ri] <= '9';
+			if (!(isa || isA || isn)) {
 				/* not a hexadecimal */
 				int sri;
 				for (sri = ri - di; sri <= ri; sri += 1) {
@@ -100,11 +102,11 @@ int request_decodeuri(char *buf, int len) {
 				continue;
 			}
 			/* itsy bitsy magicsy */
-			if (buf[ri] >= '0' && buf[ri] <= '9') {
+			if (isn) {
 				off = 0 - '0';
-			} else if (buf[ri] >= 'a' && buf[ri] <= 'f') {
+			} else if (isa) {
 				off = 10 - 'a';
-			} else if (buf[ri] >= 'A' && buf[ri] <= 'F') {
+			} else if (isA) {
 				off = 10 - 'A';
 			}
 			decode |= (buf[ri] + off) << (2 - di) * 4;
