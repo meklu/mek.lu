@@ -623,6 +623,11 @@ int request_populate(struct request_ent *rent) {
 				break;
 			}
 		}
+		/* nothing to see here */
+		if (line == 0 && lineret <= 0) {
+			rent->code = 0;
+			return 0;
+		}
 		/* read error */
 		if (lineret == -1) {
 			rent->code = 500;
@@ -811,6 +816,7 @@ int request_process(
 		/* initialise the request */
 		memset(&rent, 0, sizeof(rent));
 		/* internal value to indicate not being set */
+		rent.sock = sockfd;
 		rent.code = -1;
 		rent.ip = addr;
 		rent.wait = delay;
@@ -821,6 +827,9 @@ int request_process(
 		rr = request_populate(&rent);
 		if (rr == -1) {
 			/* quit on read error */
+			goto quit;
+		} else if (rr == 0 && rent.code == 0) {
+			/* the client disconnected */
 			goto quit;
 		} else if (rr > 0) {
 			/* rewrite the path if the request was well-formed */
