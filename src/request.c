@@ -185,7 +185,6 @@ int request_utf8validate(const char *buf) {
 			}
 		} else {
 			if (di < dc) {
-				char tmp;
 				if ((buf[i] & 0xC0) != 0x80) {
 					/* if there are still decodable bytes
 					 * left, they must be 10xxxxxx
@@ -199,8 +198,13 @@ int request_utf8validate(const char *buf) {
 #endif
 					return 0;
 				}
-				tmp = buf[i] & ~0xC0;
-				dec |= tmp << (6 * (dc - di));
+				/* 0x3F == ~0xC0
+				 *
+				 * Without ridiculous casts 0xC0 will be
+				 * handled as an int-wide value and thus
+				 * its complement will be bogus.
+				 */
+				dec |= (buf[i] & 0x3F) << (6 * (dc - di));
 				di += 1;
 			}
 			if (di == dc) {
