@@ -427,7 +427,7 @@ int request_log(
 	snprintf(respcodebuf, sizeof(respcodebuf), "%d", rent->code);
 	/* nullify control characters */
 	for (pi = 0; pi < plen; pi += 1) {
-		if (rent->path[pi] < 32) {
+		if (rent->path[pi] >= 0 && rent->path[pi] < 32) {
 			rent->path[pi] = '\0';
 		}
 	}
@@ -693,7 +693,10 @@ int request_populate(struct request_ent *rent) {
 					dlen = request_decodeuri(rent->path, plen);
 					/* nullify control characters */
 					for (pi = 0; pi < dlen; pi += 1) {
-						if (rent->path[pi] < 32) {
+						if (
+							rent->path[pi] >= 0 &&
+							rent->path[pi] < 32
+						) {
 							rent->path[pi] = '\0';
 						}
 					}
