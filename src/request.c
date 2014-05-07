@@ -651,12 +651,18 @@ int request_populate(struct request_ent *rent) {
 		/* HTTP request line */
 		if (line == 0) {
 			char *lp, *lpl;
+			char lok;
 			int spaces = 0;
 			rent->raw_request = strndup(buf, llen);
 			lp = buf;
 			do {
+				lok = 1;
 				lpl = lp;
-				lp = strchr(lp, ' ');
+				lp = strchr(lpl, ' ');
+				if (lp == NULL) {
+					lok = 0;
+					lp = &(buf[llen - 2]);
+				}
 				if (spaces == 0) {
 					/* method */
 					char *m = strndup(lpl, lp - lpl);
@@ -731,11 +737,11 @@ int request_populate(struct request_ent *rent) {
 					rent->v_major = maj;
 					rent->v_minor = min;
 				}
-				if (lp != NULL) {
+				if (lok == 1) {
 					spaces += 1;
 					lp += 1;
 				}
-			} while (lp != NULL);
+			} while (lok == 1);
 			/* there should be two spaces on the line */
 			if (spaces != 2) {
 				rent->code = 400;
