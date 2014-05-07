@@ -42,6 +42,7 @@ TARGETS := mekdotlu
 
 SRC := $(addprefix src/, $(SRC))
 OBJ := $(SRC:%.c=%.o)
+DEP := $(OBJ:%.o=%.d)
 
 .PHONY : all fall clean
 
@@ -51,6 +52,7 @@ fall : clean $(TARGETS)
 
 clean :
 	$(RM) $(OBJ)
+	$(RM) $(DEP)
 	$(RM) $(TARGETS)
 
 %.o : %.c
@@ -58,7 +60,7 @@ clean :
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@rm -f $*.d.tmp
+	@$(RM) $*.d.tmp
 
 mekdotlu : $(OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
@@ -66,4 +68,4 @@ mekdotlu : $(OBJ)
 test: src/test.c src/request.o src/log.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
--include $(OBJ:.o=.d)
+-include $(DEP)
