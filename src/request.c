@@ -159,6 +159,13 @@ int request_utf8validate(const char *buf) {
 					dc += 1;
 					b.buf <<= 1;
 				}
+#ifdef DEBUG_UTF8
+				fprintf(
+					stderr,
+					"u8v: dc %d\n",
+					dc
+				);
+#endif
 				dec = 0;
 				for (b.i = 0; b.i < 8 - dc; b.i += 1) {
 					dec |= (buf[i] & (1 << b.i)) <<
@@ -204,10 +211,17 @@ int request_utf8validate(const char *buf) {
 				 * handled as an int-wide value and thus
 				 * its complement will be bogus.
 				 */
-				dec |= (buf[i] & 0x3F) << (6 * (dc - di));
+				dec |= (buf[i] & 0x3F) << (6 * (dc - di - 1));
 				di += 1;
 			}
 			if (di == dc) {
+#ifdef DEBUG_UTF8
+				fprintf(
+					stderr,
+					"u8v: d U+%X\n",
+					dec
+				);
+#endif
 				/* codepoints above 0x10FFFF are illegal
 				 * (RFC 3629)
 				 */

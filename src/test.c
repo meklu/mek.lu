@@ -5,7 +5,7 @@
 #include <errno.h>
 
 int main(void) {
-	char buf[64];
+	char buf[4096];
 	int r;
 	errno = 0;
 	while ((r = request_getline(buf, sizeof(buf), STDIN_FILENO)) > 0) {
