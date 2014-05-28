@@ -867,16 +867,17 @@ int request_process(
 				rr = -1;
 			} else {
 				struct stat s;
-				if (fstat(f, &s) == 0) {
-					fsize = s.st_size;
-					fmodified = s.st_mtime;
-				}
 				/* initialize the lock */
 				fl.l_type = F_RDLCK;
 				fl.l_whence = SEEK_END;
 				fl.l_start = 0;
 				fl.l_len = 0;
 				fcntl(f, F_SETLKW, &fl);
+				/* stat the file */
+				if (fstat(f, &s) == 0) {
+					fsize = s.st_size;
+					fmodified = s.st_mtime;
+				}
 			}
 		}
 		if (rr == 0) {
