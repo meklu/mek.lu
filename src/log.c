@@ -65,7 +65,7 @@ int vlog_raw(
 	/* log to stdout */
 	{
 		unsigned char usecolor = (
-			isatty(STDOUT_FILENO) &&
+			(cfg->forcecolor || isatty(STDOUT_FILENO)) &&
 			color != NULL
 		);
 		/* wait for lock */

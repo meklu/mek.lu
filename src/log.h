@@ -8,6 +8,7 @@
 struct log_cfg {
 	/* log file path */
 	char *file;
+	int forcecolor;
 	int _fd;
 };
 

@@ -36,6 +36,7 @@ void print_usage(FILE *f) {
 	p("        -r<str> Set document root. Default is current directory.");
 	p("        -o<str> Set log file. Can be left blank to not log to a");
 	p("                file. Default is ./mekdotlu.log");
+	p("        -C      Force colored standard output.");
 	p("");
 	p("  (-h)  --help  Show this help and exit.");
 	p("");
@@ -91,6 +92,7 @@ void populate_cfg(
 	err = 0;
 	/* defaults */
 	cfg->_lcfg.file = strdup("mekdotlu.log");
+	cfg->_lcfg.forcecolor = 0;
 	cfg->root = config_realpath(NULL, 0);
 	cfg->port = 8081;
 	/* parse args */
@@ -107,15 +109,23 @@ void populate_cfg(
 			err = 1;
 			continue;
 		}
+#define NOVAL(x) \
+		if (argv[i][2] != '\0') { \
+			fprintf( \
+				stderr, \
+				"The -%c switch accepts no value\n", \
+				x \
+			); \
+			err = 1; \
+		}
+
 		if (argv[i][1] == 'f') {
-			if (argv[i][2] != '\0') {
-				fprintf(
-					stderr,
-					"The -f switch accepts no value\n"
-				);
-				err = 1;
-			}
+			NOVAL('f');
 			symlinks = 1;
+		} else if (argv[i][1] == 'C') {
+			NOVAL('C');
+			cfg->_lcfg.forcecolor = 1;
+#undef NOVAL
 		} else if (
 			argv[i][1] == 'h' ||
 			(
