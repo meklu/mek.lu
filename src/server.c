@@ -12,7 +12,11 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 
-#ifdef __linux
+#if !defined(__linux) && defined(USE_CAPABILITIES)
+#	undef USE_CAPABILITIES
+#endif
+
+#ifdef USE_CAPABILITIES
 #	include <sys/capability.h>
 #	include <linux/capability.h>
 #endif
@@ -25,7 +29,7 @@
  */
 int server_constrain(const struct server_cfg *cfg) {
 	const char *path = cfg->root;
-#ifdef __linux
+#ifdef USE_CAPABILITIES
 	/* get the process capability flag for CAP_SYS_CHROOT */
 	cap_flag_value_t cap_chroot = 0;
 
@@ -60,7 +64,7 @@ int server_constrain(const struct server_cfg *cfg) {
 	}
 	if (
 		geteuid() == 0
-#ifdef __linux
+#ifdef USE_CAPABILITIES
 		/* check for the capability as well */
 		|| cap_chroot == 1
 #endif
@@ -84,7 +88,7 @@ int server_constrain(const struct server_cfg *cfg) {
 			&(cfg->_lcfg),
 			"server: No chroot done! Check permissions."
 		);
-#ifdef __linux
+#ifdef USE_CAPABILITIES
 		log_wrn(
 			&(cfg->_lcfg),
 			"server: You may want to enable CAP_SYS_CHROOT:"
@@ -128,7 +132,7 @@ int server_constrain(const struct server_cfg *cfg) {
 			cfg->uid, cfg->gid
 		);
 	} else {
-#ifdef __linux
+#ifdef USE_CAPABILITIES
 		cap_t empty_caps = cap_get_proc();
 		cap_clear(empty_caps);
 

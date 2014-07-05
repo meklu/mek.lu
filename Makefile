@@ -1,7 +1,9 @@
 DEBUG := 0
 DEBUG_UTF8 := 0
+USE_CAPABILITIES := 1
 
 CFLAGS := $(CFLAGS) -Wall -Wextra -Wshadow -Wstrict-prototypes -pedantic -Os
+LDFLAGS := -lrt
 
 KERNEL := $(shell uname -s)
 
@@ -23,7 +25,10 @@ ifeq ($(DEBUG), 1)
 endif
 
 ifeq ($(KERNEL), Linux)
-	LDFLAGS := $(LDFLAGS) -lcap
+	ifeq ($(USE_CAPABILITIES), 1)
+		LDFLAGS := $(LDFLAGS) -lcap
+		CFLAGS := $(CFLAGS) -DUSE_CAPABILITIES
+	endif
 endif
 
 SRC := \
