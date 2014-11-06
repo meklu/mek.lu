@@ -979,7 +979,7 @@ int request_process(
 		/* put body, if any
 		 * e.g. /robots.txt, /, error pages
 		 */
-		if (strcmp(rent.method, "HEAD") != 0) {
+		if (rent.method == NULL || strcmp(rent.method, "HEAD") != 0) {
 			if (rent.code == 200) {
 				char fbuf[64];
 				size_t fret = 0;
