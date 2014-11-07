@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 
 struct request_ent {
-	/* the socket's associated stream */
+	/* the request socket */
 	int sock;
 	/* response code */
 	int code;
@@ -19,6 +19,8 @@ struct request_ent {
 	double dt;
 	/* how long the parent took to call us */
 	double wait;
+	/* whether to kill the request after processing */
+	char kill;
 	/* remote address */
 	const struct sockaddr *ip;
 	/* request method: GET/HEAD */

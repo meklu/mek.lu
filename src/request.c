@@ -829,8 +829,8 @@ int request_process(
 		clock_gettime(CLOCK_MONOTONIC, &tp_b);
 		/* initialise the request */
 		memset(&rent, 0, sizeof(rent));
-		/* internal value to indicate not being set */
 		rent.sock = sockfd;
+		/* internal value to indicate not being set */
 		rent.code = -1;
 		rent.ip = addr;
 		rent.wait = delay;
@@ -891,6 +891,18 @@ int request_process(
 		/* if we don't have a response code yet, 500 */
 		if (rent.code == -1) {
 			rent.code = 500;
+		}
+		/* determine whether or not we want to kill the connection */
+		if (
+			/* server error */
+			rent.code >= 500 ||
+			/* malformed request, there may still be bytes on the
+			 * pipe, which we do not appreciate */
+			rent.code == 400 ||
+			/* a teapot cannot make coffee, give up */
+			rent.code == 418
+		) {
+			rent.kill = 1;
 		}
 		/* put common headers */
 		request_put_common(lcfg, &rent);
@@ -957,7 +969,7 @@ int request_process(
 			);
 		}
 		/* error :( */
-		if (rent.code >= 500) {
+		if (rent.kill) {
 			dprintf(sockfd, "Connection: close\r\n");
 		} else if (rent.v_major == 1 && rent.v_minor == 0) {
 			/* do explicit keepalives for HTTP/1.0 when no
@@ -1028,7 +1040,7 @@ int request_process(
 			f = -1;
 		}
 		/* process next client request, or die */
-		if (rent.code >= 500) {
+		if (rent.kill) {
 			goto quit;
 		} else {
 			/* 5 second keepalive timeout */
