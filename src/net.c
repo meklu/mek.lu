@@ -63,6 +63,9 @@ int net_listen(const struct log_cfg *lcfg, int af, unsigned short port) {
 	);
 	if (ret == -1) {
 		log_perror(lcfg, errno, "net: bind");
+		if (shutdown(sockfd, SHUT_RDWR) == -1) {
+			log_perror(lcfg, errno, "net: shutdown");
+		}
 		return -1;
 	}
 	/* have at most 8 items in the backlog */
@@ -70,6 +73,9 @@ int net_listen(const struct log_cfg *lcfg, int af, unsigned short port) {
 	ret = listen(sockfd, 8);
 	if (ret == -1) {
 		log_perror(lcfg, errno, "net: listen");
+		if (shutdown(sockfd, SHUT_RDWR) == -1) {
+			log_perror(lcfg, errno, "net: shutdown");
+		}
 		return -1;
 	}
 	return sockfd;
