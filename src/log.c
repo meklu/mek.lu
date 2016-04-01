@@ -45,7 +45,9 @@ int vlog_raw(
 		int tmp;
 		/* wait for lock */
 		lock.l_type = F_WRLCK;
-		fcntl(cfg->_fd, F_SETLKW, &lock);
+		if (fcntl(cfg->_fd, F_SETLKW, &lock) == -1) {
+			perror("log: fcntl");
+		}
 		lseek(cfg->_fd, 0, SEEK_END);
 		TMPRET(tmp, ret, dprintf(
 			cfg->_fd,
@@ -70,7 +72,9 @@ int vlog_raw(
 		);
 		/* wait for lock */
 		lock.l_type = F_WRLCK;
-		fcntl(STDOUT_FILENO, F_SETLKW, &lock);
+		if (fcntl(STDOUT_FILENO, F_SETLKW, &lock) == -1) {
+			perror("log: fcntl");
+		}
 		/* colours */
 		if (usecolor) {
 			RETMINUS(dprintf(STDOUT_FILENO, "\033[%sm", color));
@@ -95,14 +99,18 @@ int vlog_raw(
 		RETMINUS(write(STDOUT_FILENO, "\n", 1));
 		/* release lock */
 		lock.l_type = F_UNLCK;
-		fcntl(STDOUT_FILENO, F_SETLK, &lock);
+		if (fcntl(STDOUT_FILENO, F_SETLK, &lock) == -1) {
+			perror("log: fcntl");
+		}
 	}
 	/* release the log file lock now; we want the line order to be
 	 * consistent across the log file and standard output
 	 */
 	if (cfg->_fd != -1) {
 		lock.l_type = F_UNLCK;
-		fcntl(cfg->_fd, F_SETLK, &lock);
+		if (fcntl(cfg->_fd, F_SETLK, &lock) == -1) {
+			perror("log: fcntl");
+		}
 	}
 	return ret;
 }
