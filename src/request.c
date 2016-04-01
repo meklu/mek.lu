@@ -1072,6 +1072,13 @@ quit:
 		errno,
 		"request: shutdown"
 	);
+	errno = 0;
+	close(sockfd);
+	log_perror(
+		lcfg,
+		errno,
+		"request: close"
+	);
 	return ret;
 }
 

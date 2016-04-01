@@ -211,7 +211,9 @@ int log_kill(struct log_cfg *cfg) {
 		lock.l_whence = SEEK_END;
 		lock.l_start = 0;
 		lock.l_len = 0;
-		fcntl(cfg->_fd, F_SETLKW, &lock);
+		if (fcntl(cfg->_fd, F_SETLKW, &lock) == -1) {
+			perror("log: fcntl");
+		}
 		/* synchronize */
 		fsync(cfg->_fd);
 		if (close(cfg->_fd) == 0) {
