@@ -34,13 +34,15 @@ int net_listen(const struct log_cfg *lcfg, int af, unsigned short port) {
 	/* disable IPv4 support with IPv6 sockets */
 	if (af == AF_INET6) {
 		int flag = 1;
-		setsockopt(
+		if (setsockopt(
 			sockfd,
 			IPPROTO_IPV6,
 			IPV6_V6ONLY,
 			(void *) &flag,
 			sizeof(flag)
-		);
+		) == -1) {
+			log_perror(lcfg, errno, "net: setsockopt");
+		}
 	}
 #endif
 	/* set the port and bind */
