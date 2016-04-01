@@ -115,6 +115,7 @@ void worker_loop(const struct log_cfg *lcfg, int ipcsock, int af, int sockfd) {
 				if (ipcoff < sizeof(ipcbuf)) {
 					continue;
 				}
+				ipcoff = 0;
 #define MSGCHK(a, b) \
 	(memcmp(a, b, sizeof(a)) == 0)
 				if (MSGCHK(ipcbuf, "quit")) {
