@@ -173,6 +173,7 @@ void populate_cfg(
 					"-u switch!\n"
 				);
 				err = 1;
+				free(buffer);
 				continue;
 			}
 			if (result == NULL) {
@@ -183,12 +184,14 @@ void populate_cfg(
 					username
 				);
 				err = 1;
+				free(buffer);
 				continue;
 			}
 
 			should_setuid = 1;
 			setuid_info.uid = pwd.pw_uid;
 			setuid_info.gid = pwd.pw_gid;
+			free(buffer);
 		} else if (argv[i][1] == 'p') {
 			int scanret = sscanf(
 				&(argv[i][2]),
