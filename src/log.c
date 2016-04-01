@@ -32,6 +32,7 @@ int vlog_raw(
 
 #define RETMINUS(expr) \
 	if (expr == -1) { \
+		va_end(vl_sec); \
 		return -1; \
 	}
 
@@ -92,7 +93,6 @@ int vlog_raw(
 			));
 		}
 		RETMINUS(vdprintf(STDOUT_FILENO, format, vl_sec));
-		va_end(vl_sec);
 		if (usecolor) {
 			RETMINUS(dprintf(STDOUT_FILENO, "\033[0m"));
 		}
@@ -112,7 +112,9 @@ int vlog_raw(
 			perror("log: fcntl");
 		}
 	}
+	va_end(vl_sec);
 	return ret;
+#undef RETMINUS
 }
 
 int log_raw(
