@@ -5,6 +5,14 @@ This is the source code that powers the http://mek.lu/ URL shortening
 service. The service itself is intended to be a private one, to be used
 by the service administrator.
 
+License
+====
+
+The source code is licensed CC0. This means you can do practically anything
+you want with the source code. The full text of the license can be found in
+the `COPYING.txt` file in the repository root or online at
+https://creativecommons.org/publicdomain/zero/1.0/
+
 Features
 ====
 
