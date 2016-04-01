@@ -872,7 +872,13 @@ int request_process(
 				fl.l_whence = SEEK_END;
 				fl.l_start = 0;
 				fl.l_len = 0;
-				fcntl(f, F_SETLKW, &fl);
+				if (fcntl(f, F_SETLKW, &fl) == -1) {
+					log_perror(
+						lcfg,
+						errno,
+						"request: fcntl"
+					);
+				}
 				/* stat the file */
 				if (fstat(f, &s) == 0) {
 					fsize = s.st_size;
@@ -1036,7 +1042,9 @@ int request_process(
 		FREEANDNULL(rent.raw_request);
 		/* close the file we opened */
 		if (f != -1) {
-			close(f);
+			if (close(f) == -1) {
+				log_perror(lcfg, errno, "request: close");
+			}
 			f = -1;
 		}
 		/* process next client request, or die */
