@@ -287,8 +287,9 @@ int main(int argc, char **argv) {
 	log_kill(&(cfg->_lcfg));
 	/* unmap it */
 	errno = 0;
-	munmap(cfg, sizeof(*cfg));
-	log_perror(&(cfg->_lcfg), errno, "main: munmap");
+	if (munmap(cfg, sizeof(*cfg)) == -1) {
+		log_perror(&(cfg->_lcfg), errno, "main: munmap");
+	}
 	/* done */
 	return 0;
 }
