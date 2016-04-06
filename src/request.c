@@ -155,10 +155,13 @@ int request_utf8validate(const char *buf) {
 				} b;
 				b.buf = buf[i] & 0xF0;
 				dc = 0;
-				while (b.buf & 0x80) {
+				/* since the loop condition is always
+				 * true at least once, check at the tail
+				 * end of the loop */
+				do {
 					dc += 1;
 					b.buf <<= 1;
-				}
+				} while (b.buf & 0x80);
 #ifdef DEBUG_UTF8
 				fprintf(
 					stderr,
