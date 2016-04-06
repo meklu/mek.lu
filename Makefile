@@ -53,7 +53,9 @@ DEP := $(OBJ:%.o=%.d)
 
 all : $(TARGETS)
 
-fall : clean $(TARGETS)
+fall :
+	$(MAKE) clean
+	$(MAKE) all
 
 clean :
 	$(RM) $(OBJ)
