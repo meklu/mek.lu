@@ -779,19 +779,22 @@ int request_populate(struct request_ent *rent) {
 		} else {
 			/* headers */
 			char *cp = strchr(buf, ':');
-			if (cp == NULL || cp[1] != ' ') {
+			if (cp == NULL) {
 				rent->code = 400;
 				return 0;
 			}
 			if (
 				strncasecmp(
-					"User-Agent: ",
+					"User-Agent:",
 					buf,
 					/* don't compare the NULL byte */
-					sizeof("User-Agent: ") - 1
+					sizeof("User-Agent:") - 1
 				) == 0
 			) {
-				rent->ua = strdup(&(cp[2]));
+				do {
+					cp = &(cp[1]);
+				} while (cp[0] == ' ' || cp[0] == '\t');
+				rent->ua = strdup(cp);
 			}
 		}
 	}
